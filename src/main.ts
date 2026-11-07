@@ -1,22 +1,23 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+const PORT = 3000;
+const SWAGGER_PATH = 'api/docs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Thiết lập cấu hình cơ bản cho Swagger
   const config = new DocumentBuilder()
     .setTitle('Medium Clone API')
     .setDescription('Tài liệu API cho dự án Medium Clone (RealWorld)')
     .setVersion('1.0')
-    .addBearerAuth() // Chuẩn bị sẵn UI để nhập token JWT cho các PR sau
+    .addBearerAuth()
     .build();
 
-  // Tạo document và setup endpoint
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document); // Truy cập qua đường dẫn /api/docs
+  SwaggerModule.setup(SWAGGER_PATH, app, document);
 
-  await app.listen(3000);
+  await app.listen(PORT);
 }
 bootstrap();
