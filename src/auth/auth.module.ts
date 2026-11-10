@@ -12,7 +12,7 @@ import { JwtStrategy } from './jwt.strategy.js'; // Thêm dòng này
     RedisModule, // Import vào đây
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'secretKey_tam_thoi',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
   ],

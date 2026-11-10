@@ -2,6 +2,8 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RedisService } from '../redis/redis.service.js';
@@ -24,13 +26,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (authHeader && authHeader.startsWith('Token ')) {
       const token = authHeader.split(' ')[1];
 
-      // 3. Kiểm tra xem Token này đã bị Logout (chui vào Redis blacklist) chưa
-      const isBlacklisted = await this.redisService.isBlacklisted(token);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+      try {
+        const isBlacklisted = await this.redisService.isBlacklisted(token);
+        if (isBlacklisted) {
+          throw new UnauthorizedException('Token đã bị vô hiệu hóa');
+        }
+      } catch (error) {
+        if (error instanceof UnauthorizedException) throw error;
+
+        // RẤT QUAN TRỌNG: Nếu gọi Redis thất bại (sập), cấm cửa luôn, trả về 503
+        throw new HttpException(
+          'Dịch vụ xác thực tạm thời gián đoạn',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
       }
     }
-
     return true;
   }
 }

@@ -1,20 +1,20 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private configService: ConfigService) {
     super({
-      // Bắt Header phải có định dạng: "Authorization: Token <chuỗi_jwt>"
       jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Token'),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secretKey_tam_thoi',
+      // Dùng getOrThrow và ép kiểu thành chuỗi <string>
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
   }
 
   async validate(payload: any) {
-    // Dữ liệu này sẽ được NestJS tự động nhét vào biến req.user ở Controller
     return {
       id: payload.sub,
       email: payload.email,

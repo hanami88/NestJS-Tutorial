@@ -10,19 +10,24 @@ export class AuthService {
   ) {}
 
   async login(loginDto: any) {
-    // 1. Tìm user qua email
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const email = loginDto.email.toLowerCase(); // Sửa lỗi chưa lowercase
+    const user = await this.usersService.findByEmail(email);
+
+    let isPasswordMatch = false;
     if (!user) {
-      throw new UnauthorizedException('Sai email');
+      // Nếu không có user, VẪN CHO CHẠY BCRYPT với một mã hash giả
+      // Để thời gian phản hồi của API luôn bằng nhau, chống Timing Attack
+      await bcrypt.compare(
+        loginDto.password,
+        '$2b$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash',
+      );
+    } else {
+      isPasswordMatch = await bcrypt.compare(loginDto.password, user.password);
     }
 
-    // 2. So sánh mật khẩu hash
-    const isPasswordMatch = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
-    if (!isPasswordMatch) {
-      throw new UnauthorizedException('Sai mật khẩu');
+    if (!user || !isPasswordMatch) {
+      // Sửa lỗi hardcode message: Thay vì viết cứng 'Sai email...', hãy dùng key của i18n
+      throw new UnauthorizedException('auth.invalid_credentials');
     }
     // 3. Tạo JWT Token (Payload là những thông tin không nhạy cảm)
     const payload = {

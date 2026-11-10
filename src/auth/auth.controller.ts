@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { UsersService } from '../users/users.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -6,6 +15,7 @@ import { RedisService } from '../redis/redis.service.js';
 import { JwtService } from '@nestjs/jwt';
 
 @Controller('api/users')
+@UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
   constructor(
     private authService: AuthService,

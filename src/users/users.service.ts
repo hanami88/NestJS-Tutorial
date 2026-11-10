@@ -3,35 +3,34 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity.js';
 import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from './dto/create-user.dto.js';
 
-Injectable();
+@Injectable() // CHÚ Ý: Bắt buộc phải có dấu @ ở đây
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>,
   ) {}
 
-  async register(createUserDto: any): Promise<UserEntity> {
-    const { username, email, password } = createUserDto;
+  async register(createUserDto: CreateUserDto) {
+    const email = createUserDto.email.toLowerCase();
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const existingUser = await this.usersRepository.findOne({
-      where: [{ email }, { username }],
-    });
-    if (existingUser) {
-      throw new ConflictException('Email hoặc Username đã tồn tại');
-    }
-
-    // Băm mật khẩu với độ khó (salt rounds) là 10
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Tạo và lưu user
     const newUser = this.usersRepository.create({
-      username,
+      ...createUserDto,
       email,
       password: hashedPassword,
     });
 
-    return this.usersRepository.save(newUser);
+    try {
+      return await this.usersRepository.save(newUser);
+    } catch (error: any) {
+      const err = error as any;
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+        throw new ConflictException('auth.email_or_username_exists');
+      }
+      throw error;
+    }
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
