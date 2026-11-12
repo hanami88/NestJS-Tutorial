@@ -4,11 +4,17 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import { ConfigModule } from '@nestjs/config';
+import { dataSourceOptions } from './config/data-source.js';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { RedisModule } from './redis/redis.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    TypeOrmModule.forRoot(dataSourceOptions),
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
@@ -20,6 +26,9 @@ import { ConfigModule } from '@nestjs/config';
         AcceptLanguageResolver, // Hỗ trợ lấy qua header Accept-Language
       ],
     }),
+    UsersModule,
+    AuthModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

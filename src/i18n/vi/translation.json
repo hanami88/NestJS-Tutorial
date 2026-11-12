@@ -1,3 +1,9 @@
 {
-  "HELLO": "Xin chào thế giới"
+  "HELLO": "Xin chào thế giới",
+  "auth": {
+    "invalid_credentials": "Sai email hoặc mật khẩu",
+    "email_or_username_exists": "Email hoặc Username đã tồn tại",
+    "token_blacklisted": "Token đã bị vô hiệu hóa (Đăng xuất)",
+    "logout_success": "Đăng xuất thành công"
+  }
 }
