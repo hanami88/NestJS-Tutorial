@@ -27,7 +27,7 @@ export class AuthService {
 
     if (!user || !isPasswordMatch) {
       // Sửa lỗi hardcode message: Thay vì viết cứng 'Sai email...', hãy dùng key của i18n
-      throw new UnauthorizedException('auth.invalid_credentials');
+      throw new UnauthorizedException('translation.auth.invalid_credentials');
     }
     // 3. Tạo JWT Token (Payload là những thông tin không nhạy cảm)
     const payload = {

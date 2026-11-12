@@ -4,42 +4,50 @@ import {
   UnauthorizedException,
   HttpException,
   HttpStatus,
+  CanActivate,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { RedisService } from '../redis/redis.service.js';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private redisService: RedisService) {
-    super();
-  }
-
+export class JwtAuthGuard implements CanActivate {
+  constructor(
+    private redisService: RedisService,
+    private configService: ConfigService,
+    private jwtService: JwtService,
+  ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // 1. Chạy xác thực gốc của NestJS (kiểm tra chữ ký, thời hạn)
-    const isValid = await super.canActivate(context);
-    if (!isValid) return false;
-
-    // 2. Trích xuất token từ Header
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
+    const token = request.headers.authorization.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('translation.auth.invalid_token');
+    }
+    try {
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+      request['user'] = payload;
+    } catch {
+      throw new UnauthorizedException('translation.auth.token_blacklisted');
+    }
 
-    if (authHeader && authHeader.startsWith('Token ')) {
-      const token = authHeader.split(' ')[1];
+    // 3. Kiểm tra Redis Blacklist
 
-      try {
-        const isBlacklisted = await this.redisService.isBlacklisted(token);
-        if (isBlacklisted) {
-          throw new UnauthorizedException('Token đã bị vô hiệu hóa');
-        }
-      } catch (error) {
-        if (error instanceof UnauthorizedException) throw error;
-
-        // RẤT QUAN TRỌNG: Nếu gọi Redis thất bại (sập), cấm cửa luôn, trả về 503
-        throw new HttpException(
-          'Dịch vụ xác thực tạm thời gián đoạn',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
+    try {
+      const isBlacklisted = await this.redisService.isBlacklisted(token);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('translation.auth.token_blacklisted');
       }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+
+      // Lỗi sập Redis trả về 503 Service Unavailable 503
+
+      throw new ServiceUnavailableException(
+        'translation.auth.service_unavailable',
+      );
     }
     return true;
   }

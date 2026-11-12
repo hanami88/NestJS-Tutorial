@@ -5,7 +5,7 @@ import { UserEntity } from './entities/user.entity.js';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto.js';
 
-@Injectable() // CHÚ Ý: Bắt buộc phải có dấu @ ở đây
+@Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
@@ -27,7 +27,9 @@ export class UsersService {
     } catch (error: any) {
       const err = error as any;
       if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
-        throw new ConflictException('auth.email_or_username_exists');
+        throw new ConflictException(
+          'translation.auth.email_or_username_exists',
+        );
       }
       throw error;
     }

@@ -4,19 +4,22 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis.module.js'; // Thêm dòng này
-import { JwtStrategy } from './jwt.strategy.js'; // Thêm dòng này
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
     UsersModule,
     RedisModule, // Import vào đây
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
   ],
-  providers: [AuthService, JwtStrategy], // Khai báo JwtStrategy
+  providers: [AuthService],
   controllers: [AuthController],
 })
 export class AuthModule {}
