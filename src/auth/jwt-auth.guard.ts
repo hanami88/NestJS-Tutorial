@@ -2,8 +2,6 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
-  HttpException,
-  HttpStatus,
   CanActivate,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -30,7 +28,7 @@ export class JwtAuthGuard implements CanActivate {
       });
       request['user'] = payload;
     } catch {
-      throw new UnauthorizedException('translation.auth.token_blacklisted');
+      throw new UnauthorizedException('translation.auth.invalid_token');
     }
 
     // 3. Kiểm tra Redis Blacklist
