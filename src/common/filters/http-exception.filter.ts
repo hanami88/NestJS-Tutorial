@@ -14,7 +14,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
-
     // Lấy message gốc (ví dụ: 'auth.email_or_username_exists')
     const rawMessage =
       typeof exceptionResponse === 'string'
