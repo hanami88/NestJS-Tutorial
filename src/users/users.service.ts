@@ -9,13 +9,13 @@ import { UserEntity } from './entities/user.entity.js';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-
+import { AttachmentsService } from '../attachments/attachments.service.js';
 @Injectable()
 export class UsersService {
-  attachmentsService: any;
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
 
   async register(createUserDto: CreateUserDto) {
@@ -83,20 +83,16 @@ export class UsersService {
       user.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    let avatarUrl: string | null = null;
+    let imageUrl: string | null = null;
     if (file) {
-      const attachment = await this.attachmentsService.replaceUserAvatar(
+      const attachment = await this.attachmentsService.replaceUserImage(
         user.id,
         file,
       );
-      avatarUrl = `/api/attachments/${attachment.id}`;
-    } else if (updateUserDto.image !== undefined) {
-      avatarUrl = updateUserDto.image;
+      imageUrl = `/api/attachments/${attachment.id}`;
     } else {
-      const currentAvatar = await this.attachmentsService.findUserAvatar(
-        user.id,
-      );
-      avatarUrl = currentAvatar ? `/api/attachments/${currentAvatar.id}` : null;
+      const currentImage = await this.attachmentsService.findUserImage(user.id);
+      imageUrl = currentImage ? `/api/attachments/${currentImage.id}` : null;
     }
 
     const savedUser = await this.usersRepository.save(user);
@@ -107,7 +103,7 @@ export class UsersService {
         token,
         username: savedUser.username,
         bio: savedUser.bio ?? null,
-        image: avatarUrl,
+        image: imageUrl,
       },
     };
   }

@@ -8,12 +8,15 @@ import { join } from 'path';
 
 @Injectable()
 export class AttachmentsService {
+  findUserAvatar(id: number) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectRepository(AttachmentEntity)
     private readonly attachmentRepository: Repository<AttachmentEntity>,
   ) {}
 
-  async replaceUserAvatar(
+  async replaceUserImage(
     userId: number,
     file: Express.Multer.File,
   ): Promise<AttachmentEntity> {
@@ -46,7 +49,7 @@ export class AttachmentsService {
     return this.attachmentRepository.save(newAttachment);
   }
 
-  async findUserAvatar(userId: number): Promise<AttachmentEntity | null> {
+  async findUserImage(userId: number): Promise<AttachmentEntity | null> {
     return this.attachmentRepository.findOne({
       where: {
         attachable_type: 'User',

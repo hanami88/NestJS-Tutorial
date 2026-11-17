@@ -19,7 +19,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { avatarMulterOptions } from '../common/config/multer.config.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 
 @Controller('api/user')
 export class UsersController {
@@ -51,26 +50,19 @@ export class UsersController {
   }
   @Put()
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('avatar', avatarMulterOptions))
+  @UseInterceptors(FileInterceptor('image', avatarMulterOptions))
   async updateUser(
-    @CurrentUser('sub') userId: number, // Sửa thành 'id' nếu JWT payload của bạn dùng id
+    @Req() req: any,
     @Headers('authorization') authHeader: string,
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const token = authHeader?.split(' ')[1] || '';
-    return this.usersService.updateUser(userId, updateUserDto, token, file);
+    return this.usersService.updateUser(
+      req.user.id,
+      updateUserDto,
+      token,
+      file,
+    );
   }
-
-  //   @Get('profiles/:username')
-  //   @UseGuards(JwtAuthGuard)
-  //   async getProfile() {}
-
-  //   @Post()
-  //   @UseGuards(JwtAuthGuard)
-  //   async followUser() {}
-
-  //   @Put()
-  //   @UseGuards(JwtAuthGuard)
-  //   async unFollowUser() {}
 }

@@ -18,8 +18,4 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   bio?: string;
-
-  @IsOptional()
-  @IsString()
-  image?: string;
 }

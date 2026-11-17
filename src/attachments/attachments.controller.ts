@@ -12,7 +12,7 @@ import { join } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { AttachmentsService } from './attachments.service.js';
 
-@Controller('attachments')
+@Controller('api/attachments')
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
@@ -25,6 +25,7 @@ export class AttachmentsController {
     const fullPath = join(process.cwd(), attachment.url);
 
     if (!existsSync(fullPath)) {
+      console.log('cc');
       throw new NotFoundException('translation.file.not_found');
     }
 

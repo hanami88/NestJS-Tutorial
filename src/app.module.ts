@@ -9,6 +9,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { ProfilesModule } from './profiles/profiles.module.js';
+import { AttachmentsModule } from './attachments/attachments.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +31,8 @@ import { RedisModule } from './redis/redis.module.js';
     UsersModule,
     AuthModule,
     RedisModule,
+    ProfilesModule,
+    AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

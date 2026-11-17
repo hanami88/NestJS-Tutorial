@@ -5,10 +5,11 @@ import { AuthController } from './auth.controller.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis.module.js'; // Thêm dòng này
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
 @Module({
   imports: [
     UsersModule,
-    RedisModule, // Import vào đây
+    RedisModule,
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
@@ -19,7 +20,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard],
   controllers: [AuthController],
+  exports: [AuthService, JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

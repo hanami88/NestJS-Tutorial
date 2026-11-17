@@ -5,40 +5,30 @@ import {
   Delete,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard.js';
-import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { ProfilesService } from './profiles.service.js';
 
-@Controller('profiles')
+@Controller('api/profiles')
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Get(':username')
-  @UseGuards(OptionalJwtAuthGuard)
-  async getProfile(
-    @Param('username') username: string,
-    @CurrentUser('sub') currentUserId?: number,
-  ) {
-    return this.profilesService.getProfile(username, currentUserId);
+  async getProfile(@Param('username') username: string) {
+    console.log(username);
+    return this.profilesService.getProfile(username);
   }
 
   @Post(':username/follow')
   @UseGuards(JwtAuthGuard)
-  async followUser(
-    @Param('username') username: string,
-    @CurrentUser('sub') currentUserId: number,
-  ) {
-    return this.profilesService.followUser(username, currentUserId);
+  async followUser(@Param('username') username: string, @Req() req: any) {
+    return this.profilesService.followUser(username, req.user.id);
   }
 
   @Delete(':username/follow')
   @UseGuards(JwtAuthGuard)
-  async unfollowUser(
-    @Param('username') username: string,
-    @CurrentUser('sub') currentUserId: number,
-  ) {
-    return this.profilesService.unfollowUser(username, currentUserId);
+  async unfollowUser(@Param('username') username: string, @Req() req: any) {
+    return this.profilesService.unfollowUser(username, req.user.id);
   }
 }

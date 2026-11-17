@@ -5,11 +5,13 @@ import { FollowEntity } from './entities/follow.entity.js';
 import { AttachmentsModule } from '../attachments/attachments.module.js';
 import { ProfilesService } from './profiles.service.js';
 import { ProfilesController } from './profiles.controller.js';
+import { RedisModule } from '../redis/redis.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, FollowEntity]),
     AttachmentsModule,
+    RedisModule,
   ],
   controllers: [ProfilesController],
   providers: [ProfilesService],

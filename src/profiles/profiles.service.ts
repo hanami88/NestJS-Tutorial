@@ -34,8 +34,8 @@ export class ProfilesService {
       following = !!followRecord;
     }
 
-    const avatar = await this.attachmentsService.findUserAvatar(targetUser.id);
-    const imageUrl = avatar ? `/api/attachments/${avatar.id}` : null;
+    const image = await this.attachmentsService.findUserImage(targetUser.id);
+    const imageUrl = image ? `/api/attachments/${image.id}` : null;
 
     return {
       profile: {
@@ -47,7 +47,7 @@ export class ProfilesService {
     };
   }
 
-  async getProfile(username: string, currentUserId?: number) {
+  async getProfile(username: string) {
     const targetUser = await this.usersRepository.findOne({
       where: { username },
     });
@@ -55,7 +55,7 @@ export class ProfilesService {
       throw new NotFoundException('translation.user.not_found');
     }
 
-    return this.buildProfileResponse(targetUser, currentUserId);
+    return this.buildProfileResponse(targetUser);
   }
 
   async followUser(username: string, currentUserId: number) {
