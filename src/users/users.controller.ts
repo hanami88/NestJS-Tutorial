@@ -14,10 +14,13 @@ import { UsersService } from './users.service.js';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { avatarMulterOptions } from '../common/config/multer.config.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-
+import { AttachmentsService } from '../attachments/attachments.service.js';
 @Controller('api/user')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private attachmentsService: AttachmentsService,
+  ) {}
   // API Lấy thông tin bản thân (Current User)
   @Get()
   @UseGuards(JwtAuthGuard) // Chỉ người có Token chưa bị khóa mới lọt qua được
@@ -28,13 +31,15 @@ export class UsersController {
     const email = req.user.email;
     const token = tokenDto.split(' ')[1];
     const user = await this.usersService.findByEmail(email);
+    const image = await this.attachmentsService.findUserImage(req.user.id);
+    const imageUrl = image ? `/api/attachments/${image.id}` : null;
     return {
       user: {
         email: user?.email,
         token: token,
         username: user?.username,
         bio: user?.bio,
-        image: user?.image,
+        image: imageUrl,
       },
     };
   }

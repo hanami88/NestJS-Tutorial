@@ -30,9 +30,6 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('translation.auth.invalid_token');
     }
-
-    // 3. Kiểm tra Redis Blacklist
-
     try {
       const isBlacklisted = await this.redisService.isBlacklisted(token);
       if (isBlacklisted) {

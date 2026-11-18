@@ -2,11 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service.js';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { AttachmentsService } from '../attachments/attachments.service.js';
+
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private attachmentsService: AttachmentsService,
   ) {}
 
   async login(loginDto: any) {
@@ -36,7 +39,8 @@ export class AuthService {
       username: user.username,
     };
     const token = await this.jwtService.signAsync(payload);
-
+    const image = await this.attachmentsService.findUserImage(user.id);
+    const imageUrl = image ? `/api/attachments/${image.id}` : null;
     // 4. Trả về format chuẩn theo spec của Medium Clone
     return {
       user: {
@@ -44,7 +48,7 @@ export class AuthService {
         token: token,
         username: user.username,
         bio: user.bio,
-        image: user.image,
+        image: imageUrl,
       },
     };
   }

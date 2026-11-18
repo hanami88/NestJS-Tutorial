@@ -15,9 +15,7 @@ import { AttachmentsService } from './attachments.service.js';
 @Controller('api/attachments')
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
-
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   async getFile(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<StreamableFile> {

@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { AttachmentEntity } from './entities/attachment.entity.js';
-import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
-
+import { extname, join } from 'path';
+import { randomUUID } from 'crypto';
+import { mkdir, unlink, writeFile } from 'fs/promises';
 @Injectable()
 export class AttachmentsService {
   findUserAvatar(id: number) {
@@ -17,36 +17,54 @@ export class AttachmentsService {
   ) {}
 
   async replaceUserImage(
+    manager: EntityManager,
     userId: number,
     file: Express.Multer.File,
-  ): Promise<AttachmentEntity> {
-    const existingAttachment = await this.attachmentRepository.findOne({
+  ): Promise<{ attachment: AttachmentEntity; oldFileUrl: string | null }> {
+    // 1. Tìm bản ghi ảnh cũ (nếu có) trong cùng transaction
+    const existingAttachment = await manager.findOne(AttachmentEntity, {
       where: {
         attachable_type: 'User',
         attachable_id: userId,
       },
     });
-
+    const oldFileUrl = existingAttachment ? existingAttachment.url : null;
     if (existingAttachment) {
-      const oldFilePath = join(process.cwd(), existingAttachment.url);
-      if (existsSync(oldFilePath)) {
-        await unlink(oldFilePath);
-      }
-      await this.attachmentRepository.remove(existingAttachment);
+      await manager.remove(existingAttachment);
     }
 
-    const normalizedPath = file.path.replace(/\\/g, '/');
+    // 2. Tạo đường dẫn lưu file mới (vd: uploads/avatars/<uuid>.png)
+    const fileExt = extname(file.originalname);
+    const uniqueFileName = `${randomUUID()}${fileExt}`;
+    const relativePath = `storage/private/avatars/${uniqueFileName}`;
 
-    const newAttachment = this.attachmentRepository.create({
+    // 3. Lưu metadata ảnh mới vào DB (chưa ghi file ra ổ đĩa vội)
+    const newAttachment = manager.create(AttachmentEntity, {
       attachable_type: 'User',
       attachable_id: userId,
-      url: normalizedPath,
+      url: relativePath,
       file_name: file.originalname,
       file_type: file.mimetype,
       file_size: file.size,
     });
+    const savedAttachment = await manager.save(newAttachment);
 
-    return this.attachmentRepository.save(newAttachment);
+    return { attachment: savedAttachment, oldFileUrl };
+  }
+
+  async deleteFileIfExists(relativePath: string | null): Promise<void> {
+    if (!relativePath) return;
+    const fullPath = join(process.cwd(), relativePath);
+    if (existsSync(fullPath)) {
+      await unlink(fullPath);
+    }
+  }
+
+  async writeBufferToDisk(relativePath: string, buffer: Buffer): Promise<void> {
+    const fullPath = join(process.cwd(), relativePath);
+    const dir = join(fullPath, '..');
+    await mkdir(dir, { recursive: true });
+    await writeFile(fullPath, buffer);
   }
 
   async findUserImage(userId: number): Promise<AttachmentEntity | null> {
