@@ -7,11 +7,7 @@ import { AttachmentsModule } from '../attachments/attachments.module.js';
 import { RedisModule } from '../redis/redis.module.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserEntity]),
-    AttachmentsModule,
-    RedisModule,
-  ],
+  imports: [TypeOrmModule.forFeature([UserEntity]), AttachmentsModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

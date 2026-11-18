@@ -3,14 +3,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { UsersModule } from '../users/users.module.js';
-import { RedisModule } from '../redis/redis.module.js'; // Thêm dòng này
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { AttachmentsModule } from '../attachments/attachments.module.js';
 @Module({
   imports: [
     UsersModule,
-    RedisModule,
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
