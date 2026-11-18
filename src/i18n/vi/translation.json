@@ -4,6 +4,8 @@
     "invalid_credentials": "Sai email hoặc mật khẩu",
     "email_or_username_exists": "Email hoặc Username đã tồn tại",
     "token_blacklisted": "Token đã bị vô hiệu hóa (Đăng xuất)",
-    "logout_success": "Đăng xuất thành công"
+    "logout_success": "Đăng xuất thành công",
+    "file.invalid_image_type": "File không dúng định dạng",
+    "file.not_found": "Không tìm thấy file"
   }
 }

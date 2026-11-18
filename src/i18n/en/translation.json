@@ -4,6 +4,8 @@
     "invalid_credentials": "Invalid email or password",
     "email_or_username_exists": "Email or Username already exists",
     "token_blacklisted": "Token has been revoked (Logged out)",
-    "logout_success": "logout success"
+    "logout_success": "logout success",
+    "file.invalid_image_type": "File invalid image type",
+    "file.not_found": "File not found"
   }
 }
