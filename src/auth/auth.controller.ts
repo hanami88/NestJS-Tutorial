@@ -1,9 +1,7 @@
 import {
   Controller,
   Post,
-  Get,
   Body,
-  Req,
   UseGuards,
   Headers,
   UseInterceptors,
@@ -23,13 +21,14 @@ export class AuthController {
     private redisService: RedisService,
     private jwtService: JwtService,
   ) {}
-
+  // API Đăng ký (register)
   @Post()
   async register(@Body('user') createUserDto: any) {
     const user = await this.usersService.register(createUserDto);
     return { user: { email: user.email, username: user.username } };
   }
 
+  // API Đăng nhập (login)
   @Post('login')
   async login(@Body('user') loginDto: any) {
     return this.authService.login(loginDto);
@@ -51,23 +50,5 @@ export class AuthController {
     await this.redisService.addToBlacklist(token, expiresIn);
 
     return { message: 'auth.logout_success' };
-  }
-
-  // API Lấy thông tin bản thân (Current User)
-  @Get()
-  @UseGuards(JwtAuthGuard) // Chỉ người có Token chưa bị khóa mới lọt qua được
-  async getCurrentUser(@Req() req: any) {
-    // req.user được sinh ra từ JwtStrategy
-    const email = req.user.email;
-    const user = await this.usersService.findByEmail(email);
-    return {
-      user: {
-        email: user?.email,
-        token: req.headers.authorization.split(' ')[1],
-        username: user?.username,
-        bio: user?.bio,
-        image: user?.image,
-      },
-    };
   }
 }
