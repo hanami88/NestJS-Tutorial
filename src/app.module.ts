@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { ProfilesModule } from './profiles/profiles.module.js';
 import { AttachmentsModule } from './attachments/attachments.module.js';
+import { ArticlesModule } from './articles/articles.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -33,6 +34,7 @@ import { AttachmentsModule } from './attachments/attachments.module.js';
     RedisModule,
     ProfilesModule,
     AttachmentsModule,
+    ArticlesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
