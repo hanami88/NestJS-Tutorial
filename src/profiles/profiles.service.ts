@@ -47,7 +47,7 @@ export class ProfilesService {
     };
   }
 
-  async getProfile(username: string) {
+  async getProfile(username: string, currentUserId?: number) {
     const targetUser = await this.usersRepository.findOne({
       where: { username },
     });
@@ -55,7 +55,7 @@ export class ProfilesService {
       throw new NotFoundException('translation.user.not_found');
     }
 
-    return this.buildProfileResponse(targetUser);
+    return this.buildProfileResponse(targetUser, currentUserId);
   }
 
   async followUser(username: string, currentUserId: number) {

@@ -15,6 +15,7 @@
     "not_found": "Không tìm thấy người dùng"
   },
   "article": {
-    "not_valid": "Thông tin không hợp lệ"
+    "not_valid": "Thông tin không hợp lệ",
+    "not_found": "Không tìm thấy bài viết"
   }
 }

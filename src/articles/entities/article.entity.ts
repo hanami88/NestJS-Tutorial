@@ -50,4 +50,12 @@ export class ArticleEntity {
     inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
   })
   tags: TagEntity[];
+  // 3. Quan hệ Nhiều - Nhiều với User cho tính năng Favorite (Tự động tạo bảng trung gian article_favorites)
+  @ManyToMany(() => UserEntity)
+  @JoinTable({
+    name: 'article_favorites',
+    joinColumn: { name: 'article_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
+  })
+  favoritedBy: UserEntity[];
 }
