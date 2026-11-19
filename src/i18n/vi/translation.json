@@ -16,6 +16,7 @@
   },
   "article": {
     "not_valid": "Thông tin không hợp lệ",
-    "not_found": "Không tìm thấy bài viết"
+    "not_found": "Không tìm thấy bài viết",
+    "forbidden": "Không thể xoá, do không đủ quyền"
   }
 }

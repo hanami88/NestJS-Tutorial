@@ -13,8 +13,8 @@ import {
 } from './dto/article-response.dto.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
 import { UserEntity } from '../users/entities/user.entity.js';
-import { NotFoundException } from '@nestjs/common';
-
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { UpdateArticleDataDto } from './dto/update-article.dto.js';
 interface ArticleFilterQuery {
   tag?: string;
   author?: string;
@@ -238,7 +238,153 @@ export class ArticlesService {
       article: formattedArticle,
     };
   }
+  async updateArticle(
+    slug: string,
+    dto: UpdateArticleDataDto,
+    currentUserId: number,
+  ): Promise<SingleArticleResponseDto> {
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      relations: {
+        author: true,
+        tags: true,
+        favoritedBy: true,
+      },
+    });
 
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    // Chỉ tác giả bài viết mới được phép sửa
+    if (article.author.id !== currentUserId) {
+      throw new ForbiddenException('translation.article.forbidden');
+    }
+
+    // Nếu title thay đổi -> cập nhật title và tạo lại slug mới (dùng lại hàm tạo slug bạn đã viết lúc create)
+    if (dto.title !== undefined && dto.title !== article.title) {
+      article.title = dto.title;
+      article.slug = this.generateSlug(dto.title); // Thay bằng tên hàm tạo slug của bạn
+    }
+
+    if (dto.description !== undefined) {
+      article.description = dto.description;
+    }
+
+    if (dto.body !== undefined) {
+      article.body = dto.body;
+    }
+
+    const updatedArticle = await this.articleRepository.save(article);
+
+    const [formattedArticle] = await this.formatArticlesList(
+      [updatedArticle],
+      currentUserId,
+    );
+
+    return {
+      article: formattedArticle,
+    };
+  }
+
+  async deleteArticle(slug: string, currentUserId: number): Promise<void> {
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      relations: {
+        author: true,
+      },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    // Chỉ tác giả bài viết mới được phép xóa
+    if (article.author.id !== currentUserId) {
+      throw new ForbiddenException('translation.article.forbidden');
+    }
+
+    await this.articleRepository.remove(article);
+  }
+
+  async favoriteArticle(
+    slug: string,
+    currentUserId: number,
+  ): Promise<SingleArticleResponseDto> {
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      relations: {
+        author: true,
+        tags: true,
+        favoritedBy: true,
+      },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    const alreadyFavorited = article.favoritedBy.some(
+      (user) => user.id === currentUserId,
+    );
+
+    // Chỉ thêm vào bảng trung gian nếu user chưa thích bài này (tránh lỗi Duplicate entry)
+    if (!alreadyFavorited) {
+      const currentUser = await this.userRepository.findOneBy({
+        id: currentUserId,
+      });
+      if (currentUser) {
+        article.favoritedBy.push(currentUser);
+        await this.articleRepository.save(article);
+      }
+    }
+
+    const [formattedArticle] = await this.formatArticlesList(
+      [article],
+      currentUserId,
+    );
+
+    return {
+      article: formattedArticle,
+    };
+  }
+
+  async unfavoriteArticle(
+    slug: string,
+    currentUserId: number,
+  ): Promise<SingleArticleResponseDto> {
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      relations: {
+        author: true,
+        tags: true,
+        favoritedBy: true,
+      },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    const initialLength = article.favoritedBy.length;
+    article.favoritedBy = article.favoritedBy.filter(
+      (user) => user.id !== currentUserId,
+    );
+
+    // Chỉ gọi save xuống DB nếu thực sự có xóa bớt phần tử
+    if (article.favoritedBy.length !== initialLength) {
+      await this.articleRepository.save(article);
+    }
+
+    const [formattedArticle] = await this.formatArticlesList(
+      [article],
+      currentUserId,
+    );
+
+    return {
+      article: formattedArticle,
+    };
+  }
   // Hàm helper chuyển đổi mảng ArticleEntity[] sang ArticleDataDto[]
   private async formatArticlesList(
     articles: ArticleEntity[],
