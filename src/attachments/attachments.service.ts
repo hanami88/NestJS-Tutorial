@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { AttachmentEntity } from './entities/attachment.entity.js';
 import { existsSync } from 'fs';
 import { extname, join } from 'path';
@@ -8,14 +8,10 @@ import { randomUUID } from 'crypto';
 import { mkdir, unlink, writeFile } from 'fs/promises';
 @Injectable()
 export class AttachmentsService {
-  findUserAvatar(id: number) {
-    throw new Error('Method not implemented.');
-  }
   constructor(
     @InjectRepository(AttachmentEntity)
     private readonly attachmentRepository: Repository<AttachmentEntity>,
   ) {}
-
   async replaceUserImage(
     manager: EntityManager,
     userId: number,
@@ -84,5 +80,17 @@ export class AttachmentsService {
       throw new NotFoundException('translation.file.not_found');
     }
     return attachment;
+  }
+  async findUserImages(userIds: number[]): Promise<AttachmentEntity[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.attachmentRepository.find({
+      where: {
+        attachable_type: 'User',
+        attachable_id: In(userIds),
+      },
+    });
   }
 }

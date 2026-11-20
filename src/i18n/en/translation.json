@@ -12,7 +12,7 @@
     "not_found": "File not found"
   },
   "user": {
-    "user.not_found": "user not found"
+    "not_found": "user not found"
   },
   "article": {
     "not_valid": "information not valid",

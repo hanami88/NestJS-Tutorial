@@ -13,12 +13,14 @@ import {
   Put,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { OptionalJwtAuthGuard } from '../auth/jwt-authOptional.guard.js';
 import { ArticlesService } from './articles.service.js';
-import { CreateArticleDataDto } from './dto/article.dto.js';
+import { CreateArticleRequestDto } from './dto/article.dto.js';
 import {
   MultipleArticlesResponseDto,
   SingleArticleResponseDto,
 } from './dto/article-response.dto.js';
+import { ListArticlesQueryDto } from './dto/list-articles-query.dto.js';
 import { UpdateArticleDto } from './dto/update-article.dto.js';
 @Controller('/api/articles')
 export class ArticlesController {
@@ -27,36 +29,37 @@ export class ArticlesController {
   @UseGuards(JwtAuthGuard)
   async createArticle(
     @Req() req: any,
-    @Body('article') article: CreateArticleDataDto,
+    @Body() article: CreateArticleRequestDto,
   ) {
     return this.articlesService.createArticle(req.user.id, article);
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   async listArticle(
     @Query()
-    query: any,
+    query: ListArticlesQueryDto,
     @Req() req: any,
   ): Promise<MultipleArticlesResponseDto> {
-    return this.articlesService.listArticles(query, req?.user.id);
+    return this.articlesService.listArticles(query, req.user?.id);
   }
 
   @Get('feed')
   @UseGuards(JwtAuthGuard)
   async feedArticle(
     @Req() req: any,
-    @Query() query: any,
+    @Query() query: ListArticlesQueryDto,
   ): Promise<MultipleArticlesResponseDto> {
     return this.articlesService.feedArticle(query, req.user.id);
   }
 
   @Get(':slug')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   async getArticle(
     @Param('slug') slug: string,
     @Req() req: any,
   ): Promise<SingleArticleResponseDto> {
-    return this.articlesService.getArticle(slug, req.user.id);
+    return this.articlesService.getArticle(slug, req.user?.id);
   }
 
   @Put(':slug')

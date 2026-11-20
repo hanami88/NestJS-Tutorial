@@ -58,4 +58,6 @@ export class ArticleEntity {
     inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
   })
   favoritedBy: UserEntity[];
+
+  favoritesCount?: number;
 }
