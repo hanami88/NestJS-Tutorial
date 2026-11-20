@@ -4,13 +4,20 @@
     "invalid_credentials": "Invalid email or password",
     "email_or_username_exists": "Email or Username already exists",
     "token_blacklisted": "Token has been revoked (Logged out)",
-    "logout_success": "logout success"
+    "logout_success": "logout success",
+    "invalid_token": "invalid token"
   },
   "file": {
     "invalid_image_type": "File invalid image type",
     "not_found": "File not found"
   },
   "user": {
-    "user.not_found": "user not found"
+    "not_found": "user not found"
+  },
+  "article": {
+    "not_valid": "information not valid",
+    "not_found": "article not found",
+    "forbidden": "forbidden",
+    "update_forbidden": "update forbidden"
   }
 }

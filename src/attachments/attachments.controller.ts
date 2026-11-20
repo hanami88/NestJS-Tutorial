@@ -2,14 +2,12 @@ import {
   Controller,
   Get,
   Param,
-  UseGuards,
   StreamableFile,
   NotFoundException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { createReadStream, existsSync } from 'fs';
 import { join } from 'path';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { AttachmentsService } from './attachments.service.js';
 
 @Controller('api/attachments')
