@@ -102,29 +102,45 @@ export class ArticlesService {
       return [];
     }
 
-    // Lọc khoảng trắng và loại bỏ tag trùng lặp trong request
+    // 1. Chuẩn hóa và lọc trùng tên tag trong cùng một request
     const uniqueNames = Array.from(
-      new Set(tagList.map((t) => t.trim()).filter(Boolean)),
+      new Set(tagList.map((t) => t.trim()).filter((t) => t.length > 0)),
     );
-    if (uniqueNames.length === 0) return [];
 
-    // Tìm các tag đã tồn tại trong bảng tags
+    if (uniqueNames.length === 0) {
+      return [];
+    }
+
+    // 2. Tìm các tag đã tồn tại
     const existingTags = await this.tagRepository.find({
       where: { name: In(uniqueNames) },
     });
-    const existingNames = new Set(existingTags.map((t) => t.name));
+    const existingNames = new Set(existingTags.map((tag) => tag.name));
 
-    // Tạo instance mới cho những tag chưa có trong DB (cascade: ['insert'] sẽ tự lưu)
-    const newTags = uniqueNames
+    // 3. Lọc ra các tên tag chưa có và dùng INSERT IGNORE (.orIgnore()) để chèn an toàn
+    const newTagValues = uniqueNames
       .filter((name) => !existingNames.has(name))
-      .map((name) => this.tagRepository.create({ name }));
+      .map((name) => ({ name }));
 
-    return [...existingTags, ...newTags];
+    if (newTagValues.length > 0) {
+      await this.tagRepository
+        .createQueryBuilder()
+        .insert()
+        .into(TagEntity)
+        .values(newTagValues)
+        .orIgnore() // Nếu request khác vừa kịp chèn trước thì bỏ qua, không báo lỗi Duplicate entry
+        .execute();
+    }
+
+    // 4. Tải lại toàn bộ danh sách TagEntity chuẩn từ DB (đều đã có đầy đủ id) để gắn vào bài viết
+    return this.tagRepository.find({
+      where: { name: In(uniqueNames) },
+    });
   }
 
   async listArticles(
     query: ArticleFilterQuery,
-    currentUserId: number, // Truyền từ req.user?.id (nếu có đăng nhập)
+    currentUserId?: number,
   ): Promise<MultipleArticlesResponseDto> {
     const { tag, author, favorited, limit = 20, offset = 0 } = query;
     // 1. Khởi tạo QueryBuilder và join các bảng liên quan
@@ -179,8 +195,7 @@ export class ArticlesService {
     query: ArticleFilterQuery,
     currentUserId: number,
   ): Promise<MultipleArticlesResponseDto> {
-    const limit = query.limit !== undefined ? Number(query.limit) : 20;
-    const offset = query.offset !== undefined ? Number(query.offset) : 0;
+    const { limit = 20, offset = 0 } = query;
     // 1. Khởi tạo QueryBuilder và join các bảng liên quan
     const qb = this.articleRepository
       .createQueryBuilder('article')
@@ -243,12 +258,11 @@ export class ArticlesService {
     dto: UpdateArticleDataDto,
     currentUserId: number,
   ): Promise<SingleArticleResponseDto> {
+    // 1. Chỉ load thông tin cơ bản và author để kiểm tra quyền sở hữu
     const article = await this.articleRepository.findOne({
       where: { slug },
       relations: {
         author: true,
-        tags: true,
-        favoritedBy: true,
       },
     });
 
@@ -256,29 +270,45 @@ export class ArticlesService {
       throw new NotFoundException('translation.article.not_found');
     }
 
-    // Chỉ tác giả bài viết mới được phép sửa
+    // 2. Dùng key thông báo lỗi riêng cho quyền chỉnh sửa (không dùng chung thông báo xóa)
     if (article.author.id !== currentUserId) {
-      throw new ForbiddenException('translation.article.forbidden');
+      throw new ForbiddenException('translation.article.update_forbidden');
     }
 
-    // Nếu title thay đổi -> cập nhật title và tạo lại slug mới (dùng lại hàm tạo slug bạn đã viết lúc create)
+    // 3. Gom duy nhất các trường thực sự thay đổi vào object updateData
+    const updateData: Partial<ArticleEntity> = {};
+
     if (dto.title !== undefined && dto.title !== article.title) {
-      article.title = dto.title;
-      article.slug = this.generateSlug(dto.title); // Thay bằng tên hàm tạo slug của bạn
+      updateData.title = dto.title;
+      updateData.slug = this.generateSlug(dto.title);
     }
 
     if (dto.description !== undefined) {
-      article.description = dto.description;
+      updateData.description = dto.description;
     }
 
     if (dto.body !== undefined) {
-      article.body = dto.body;
+      updateData.body = dto.body;
     }
 
-    const updatedArticle = await this.articleRepository.save(article);
+    // 4. Chỉ thực thi lệnh UPDATE nếu có ít nhất 1 trường thay đổi
+    // Câu lệnh SQL sinh ra chỉ tác động đúng các cột trong updateData, không chạm vào favoritedBy hay tags
+    if (Object.keys(updateData).length > 0) {
+      await this.articleRepository.update(article.id, updateData);
+    }
+
+    // 5. Tải lại bài viết với đầy đủ relations mới nhất từ DB để format trả về
+    const updatedArticle = await this.articleRepository.findOne({
+      where: { id: article.id },
+      relations: {
+        author: true,
+        tags: true,
+        favoritedBy: true,
+      },
+    });
 
     const [formattedArticle] = await this.formatArticlesList(
-      [updatedArticle],
+      [updatedArticle!],
       currentUserId,
     );
 
@@ -311,8 +341,30 @@ export class ArticlesService {
     slug: string,
     currentUserId: number,
   ): Promise<SingleArticleResponseDto> {
+    // 1. Chỉ lấy thông tin cơ bản (id) của bài viết, không cần load relations ở đây
     const article = await this.articleRepository.findOne({
       where: { slug },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    // 2. Chèn trực tiếp vào bảng trung gian (bỏ qua nếu đã tồn tại)
+    await this.articleRepository
+      .createQueryBuilder()
+      .insert()
+      .into('article_favorites')
+      .values({
+        article_id: article.id,
+        user_id: currentUserId,
+      })
+      .orIgnore()
+      .execute();
+
+    // 3. Tải lại bài viết kèm đầy đủ relations mới nhất từ DB
+    const updatedArticle = await this.articleRepository.findOne({
+      where: { id: article.id },
       relations: {
         author: true,
         tags: true,
@@ -320,27 +372,8 @@ export class ArticlesService {
       },
     });
 
-    if (!article) {
-      throw new NotFoundException('translation.article.not_found');
-    }
-
-    const alreadyFavorited = article.favoritedBy.some(
-      (user) => user.id === currentUserId,
-    );
-
-    // Chỉ thêm vào bảng trung gian nếu user chưa thích bài này (tránh lỗi Duplicate entry)
-    if (!alreadyFavorited) {
-      const currentUser = await this.userRepository.findOneBy({
-        id: currentUserId,
-      });
-      if (currentUser) {
-        article.favoritedBy.push(currentUser);
-        await this.articleRepository.save(article);
-      }
-    }
-
     const [formattedArticle] = await this.formatArticlesList(
-      [article],
+      [updatedArticle!],
       currentUserId,
     );
 
@@ -353,8 +386,29 @@ export class ArticlesService {
     slug: string,
     currentUserId: number,
   ): Promise<SingleArticleResponseDto> {
+    // 1. Chỉ lấy thông tin cơ bản (id) của bài viết
     const article = await this.articleRepository.findOne({
       where: { slug },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    // 2. Xóa trực tiếp cặp (article_id, user_id) trong bảng trung gian
+    await this.articleRepository
+      .createQueryBuilder()
+      .delete()
+      .from('article_favorites')
+      .where('article_id = :articleId AND user_id = :userId', {
+        articleId: article.id,
+        userId: currentUserId,
+      })
+      .execute();
+
+    // 3. Tải lại bài viết kèm đầy đủ relations mới nhất từ DB
+    const updatedArticle = await this.articleRepository.findOne({
+      where: { id: article.id },
       relations: {
         author: true,
         tags: true,
@@ -362,22 +416,9 @@ export class ArticlesService {
       },
     });
 
-    if (!article) {
-      throw new NotFoundException('translation.article.not_found');
-    }
-
-    const initialLength = article.favoritedBy.length;
-    article.favoritedBy = article.favoritedBy.filter(
-      (user) => user.id !== currentUserId,
-    );
-
-    // Chỉ gọi save xuống DB nếu thực sự có xóa bớt phần tử
-    if (article.favoritedBy.length !== initialLength) {
-      await this.articleRepository.save(article);
-    }
-
+    // Sửa [article] thành [updatedArticle!] ở đây
     const [formattedArticle] = await this.formatArticlesList(
-      [article],
+      [updatedArticle!],
       currentUserId,
     );
 
@@ -388,7 +429,7 @@ export class ArticlesService {
   // Hàm helper chuyển đổi mảng ArticleEntity[] sang ArticleDataDto[]
   private async formatArticlesList(
     articles: ArticleEntity[],
-    currentUserId: number,
+    currentUserId?: number,
   ): Promise<ArticleDataDto[]> {
     if (articles.length === 0) {
       return [];

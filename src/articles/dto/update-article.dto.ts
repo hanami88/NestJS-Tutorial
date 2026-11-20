@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  IsDefined,
+  IsObject,
   IsOptional,
   IsString,
   MinLength,
@@ -22,6 +24,8 @@ export class UpdateArticleDataDto {
 }
 
 export class UpdateArticleDto {
+  @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => UpdateArticleDataDto)
   article: UpdateArticleDataDto;

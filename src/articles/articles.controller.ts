@@ -33,13 +33,12 @@ export class ArticlesController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   async listArticle(
     @Query()
     query: any,
     @Req() req: any,
   ): Promise<MultipleArticlesResponseDto> {
-    return this.articlesService.listArticles(query, req.user.id);
+    return this.articlesService.listArticles(query, req?.user.id);
   }
 
   @Get('feed')

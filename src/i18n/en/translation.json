@@ -17,6 +17,7 @@
   "article": {
     "not_valid": "information not valid",
     "not_found": "article not found",
-    "forbidden": "forbidden"
+    "forbidden": "forbidden",
+    "update_forbidden": "update forbidden"
   }
 }
