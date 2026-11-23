@@ -1,8 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Query,
   Req,
@@ -30,5 +34,16 @@ export class CommentsController {
   @UseGuards(OptionalJwtAuthGuard)
   async getComment(@Param('slug') slug: string, @Req() req: any) {
     return this.commentService.getComment(slug, req.user?.id);
+  }
+
+  @Delete(':slug/comments/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteComment(
+    @Param('slug') slug: string,
+    @Param('id', ParseIntPipe) commentId: number,
+    @Req() req: any,
+  ): Promise<void> {
+    return this.commentService.deleteComment(slug, commentId, req.user.id);
   }
 }

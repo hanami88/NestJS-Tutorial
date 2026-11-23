@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CommentEntity } from './entities/comment.entity.js';
@@ -74,6 +78,46 @@ export class CommentsService {
     return {
       comments: formattedComment,
     };
+  }
+
+  async deleteComment(
+    slug: string,
+    commentId: number,
+    currentUserId: number,
+  ): Promise<void> {
+    // 1. Kiểm tra bài viết tồn tại theo slug
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!article) {
+      throw new NotFoundException('translation.article.not_found');
+    }
+
+    // 2. Tìm comment theo cả id và articleId (đảm bảo comment thuộc đúng bài viết trên URL)
+    const comment = await this.commentRepository.findOne({
+      where: {
+        id: commentId,
+        articleId: article.id,
+      },
+      select: {
+        id: true,
+        authorId: true,
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('translation.comment.not_found');
+    }
+
+    // 3. Chỉ tác giả của comment mới được phép xóa
+    if (comment.authorId !== currentUserId) {
+      throw new ForbiddenException('translation.comment.forbidden');
+    }
+
+    // 4. Xóa comment
+    await this.commentRepository.delete(comment.id);
   }
 
   private async formatCommentsList(
