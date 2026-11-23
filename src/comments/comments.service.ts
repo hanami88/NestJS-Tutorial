@@ -105,6 +105,9 @@ export class CommentsService {
         id: true,
         authorId: true,
       },
+      order: {
+        createdAt: 'DESC',
+      },
     });
 
     if (!comment) {

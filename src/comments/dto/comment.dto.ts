@@ -1,5 +1,10 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsObject,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CommentDataDto {
   @IsString()
@@ -11,5 +16,6 @@ export class CreateCommentDataDto {
   @ValidateNested()
   @Type(() => CommentDataDto)
   @IsNotEmpty()
+  @IsObject()
   comment: CommentDataDto;
 }
