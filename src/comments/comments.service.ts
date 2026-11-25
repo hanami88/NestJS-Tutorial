@@ -69,6 +69,7 @@ export class CommentsService {
     const comments = await this.commentRepository.find({
       where: { articleId: article.id },
       relations: { author: true },
+      order: { createdAt: 'DESC', id: 'DESC' }
     });
     const formattedComment = await this.formatCommentsList(
       comments,
@@ -104,9 +105,6 @@ export class CommentsService {
       select: {
         id: true,
         authorId: true,
-      },
-      order: {
-        createdAt: 'DESC',
       },
     });
 
