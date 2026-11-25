@@ -10,7 +10,7 @@ export const dataSourceOptions: DataSourceOptions = {
   database: process.env.DB_DATABASE,
   entities: ['dist/**/*.entity.js'], // Trong môi trường ESM, trỏ vào thư mục compile (dist)
   migrations: ['dist/migrations/*.js'],
-  synchronize: false, // Bắt buộc tắt (false) để dùng migration thủ công
+  synchronize: process.env.NODE_ENV === 'test', // Bắt buộc tắt (false) ở dev/prod để dùng migration thủ công
 };
 
 const dataSource = new DataSource(dataSourceOptions);
