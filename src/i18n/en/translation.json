@@ -19,5 +19,9 @@
     "not_found": "article not found",
     "forbidden": "forbidden",
     "update_forbidden": "update forbidden"
+  },
+  "comment": {
+    "not_found": "comment not found",
+    "forbidden": "forbidden"
   }
 }
